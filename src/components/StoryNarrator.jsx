@@ -62,13 +62,11 @@ export default function StoryNarrator({ storyContent, storyId, onStatusChange, s
 
       utterance.onend = () => {
         if (isPlayingRef.current && !isPaused) {
-          setCurrentChunkIndex((prevIndex) => {
-            const newChunkIndex = prevIndex + 1;
-            console.log(`📢 Avanzando al siguiente chunk: ${newChunkIndex}`);
-            setTimeout(() => readNextChunk(newChunkIndex, 0), 100); // 🔥 Esperar a que el estado se actualice
-            return newChunkIndex;
-          });
+          const newChunkIndex = index + 1;
+          setCurrentChunkIndex(newChunkIndex); // 🔥 Guardamos el nuevo índice
           setCurrentCharIndex(0);
+          savePosition(newChunkIndex, 0); // 🔥 Guardamos la posición
+          readNextChunk(newChunkIndex, 0); // 🔥 Llamamos solo una vez aquí
         }
       };
 
