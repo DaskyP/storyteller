@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 
-export default function StoryNarrator({ storyContent, onStatusChange, setHandleCommand }) {
+export default function StoryNarrator({ storyContent, storyId, onStatusChange, setHandleCommand }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentChunkIndex, setCurrentChunkIndex] = useState(0);
   const [currentCharIndex, setCurrentCharIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
 
   const utteranceQueueRef = useRef([]);
   const isPlayingRef = useRef(false);
@@ -12,9 +13,28 @@ export default function StoryNarrator({ storyContent, onStatusChange, setHandleC
 
   useEffect(() => {
     setHandleCommand(() => handleCommand);
+    loadLastPosition();
   }, []);
 
-  // 🔹 Divide la historia en fragmentos de 15 palabras
+  useEffect(() => {
+    savePosition(currentChunkIndex, currentCharIndex);
+  }, [currentChunkIndex, currentCharIndex]);
+
+  const savePosition = (chunkIndex, charIndex) => {
+    localStorage.setItem(`story_${storyId}`, JSON.stringify({ chunkIndex, charIndex }));
+    console.log(`📌 Posición guardada correctamente: chunkIndex=${chunkIndex}, charIndex=${charIndex}`);
+  };
+
+  const loadLastPosition = () => {
+    const savedPosition = localStorage.getItem(`story_${storyId}`);
+    if (savedPosition) {
+      const { chunkIndex, charIndex } = JSON.parse(savedPosition);
+      console.log(`✅ Posición cargada correctamente: chunkIndex=${chunkIndex}, charIndex=${charIndex}`);
+      setCurrentChunkIndex(chunkIndex);
+      setCurrentCharIndex(charIndex);
+    }
+  };
+
   const splitText = (text, wordsPerChunk = 15) => {
     const words = text.split(" ");
     let chunks = [];
@@ -24,31 +44,36 @@ export default function StoryNarrator({ storyContent, onStatusChange, setHandleC
     return chunks;
   };
 
-  // 🔹 Inicia o reanuda la narración desde la posición guardada
   const speakText = (chunks, startIndex, charIndex = 0) => {
     utteranceQueueRef.current = chunks;
     isPlayingRef.current = true;
+    setIsPaused(false);
     readNextChunk(startIndex, charIndex);
   };
 
-  // 🔹 Lee fragmentos en orden sin perder la posición
   const readNextChunk = (index, charIndex) => {
     if (index < utteranceQueueRef.current.length && isPlayingRef.current) {
-      utterance = new SpeechSynthesisUtterance(utteranceQueueRef.current[index].slice(charIndex));
+      const textToRead = utteranceQueueRef.current[index].slice(charIndex);
+
+      utterance = new SpeechSynthesisUtterance(textToRead);
       utterance.lang = "es-ES";
       utterance.rate = 1;
       utterance.pitch = 1;
 
       utterance.onend = () => {
-        if (isPlayingRef.current) {
-          setCurrentChunkIndex(index + 1);
+        if (isPlayingRef.current && !isPaused) {
+          setCurrentChunkIndex((prevIndex) => {
+            const newChunkIndex = prevIndex + 1;
+            console.log(`📢 Avanzando al siguiente chunk: ${newChunkIndex}`);
+            setTimeout(() => readNextChunk(newChunkIndex, 0), 100); // 🔥 Esperar a que el estado se actualice
+            return newChunkIndex;
+          });
           setCurrentCharIndex(0);
-          readNextChunk(index + 1, 0);
         }
       };
 
       utterance.onboundary = (event) => {
-        setCurrentCharIndex(event.charIndex); // 🔥 Guarda la última posición en el fragmento
+        setCurrentCharIndex(event.charIndex);
       };
 
       synth.speak(utterance);
@@ -58,27 +83,40 @@ export default function StoryNarrator({ storyContent, onStatusChange, setHandleC
     }
   };
 
-  // 🔹 Maneja los comandos de `PlayButton`
   const handleCommand = (command) => {
     if (command === "play") {
-      if (!isPlayingRef.current) {
-        synth.cancel(); // 🔥 Cancelar cualquier narración activa antes de iniciar nuevamente
+      const savedPosition = JSON.parse(localStorage.getItem(`story_${storyId}`)) || { chunkIndex: 0, charIndex: 0 };
+      const { chunkIndex, charIndex } = savedPosition;
+
+      if (isPaused) {
+        console.log(`▶️ Reanudando desde chunkIndex=${chunkIndex}, charIndex=${charIndex}`);
+        synth.cancel();
+        setIsPaused(false);
+        speakText(utteranceQueueRef.current, chunkIndex, charIndex);
+      } else if (!isPlayingRef.current) {
+        console.log(`🎙️ Iniciando desde chunkIndex=${chunkIndex}, charIndex=${charIndex}`);
+        synth.cancel();
         const chunks = splitText(storyContent, 15);
-        speakText(chunks, currentChunkIndex, currentCharIndex); // 🔥 Continúa desde donde quedó
+        speakText(chunks, chunkIndex, charIndex);
         setIsPlaying(true);
         onStatusChange(true);
       }
     } else if (command === "pause") {
-      synth.cancel(); // 🔥 Cancelar en lugar de pausar para permitir reanudar después
+      console.log(`⏸️ Pausando en chunkIndex=${currentChunkIndex}, charIndex=${currentCharIndex}`);
+      synth.cancel();
       isPlayingRef.current = false;
       setIsPlaying(false);
+      setIsPaused(true);
       onStatusChange(false);
     } else if (command === "restart") {
+      console.log(`🔄 Reiniciando historia`);
       synth.cancel();
       setCurrentChunkIndex(0);
       setCurrentCharIndex(0);
       isPlayingRef.current = false;
       setIsPlaying(false);
+      setIsPaused(false);
+      localStorage.removeItem(`story_${storyId}`);
       onStatusChange(false);
     }
   };

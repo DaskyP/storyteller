@@ -13,6 +13,7 @@ export default function StoryCard({ title, description, duration, content }) {
       <p className="text-gray-400 mt-2">Duración: {duration}</p>
 
       <StoryNarrator
+        storyId={title} // 🔥 Pasamos el título como ID único para guardar la posición
         storyContent={content}
         onStatusChange={setIsPlaying}
         setHandleCommand={setHandleCommand}
