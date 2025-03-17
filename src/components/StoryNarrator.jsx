@@ -9,7 +9,6 @@ export default function StoryNarrator({ storyContent, storyId, onStatusChange, s
   const utteranceQueueRef = useRef([]);
   const isPlayingRef = useRef(false);
   const synth = window.speechSynthesis;
-  let utterance;
 
   useEffect(() => {
     console.log(`Registrando controlador en StoryNarrator para ID: ${storyId}`);
@@ -37,49 +36,11 @@ export default function StoryNarrator({ storyContent, storyId, onStatusChange, s
   };
 
   const splitText = (text, wordsPerChunk = 15) => {
-    const words = text.split(" ");
-    let chunks = [];
-    for (let i = 0; i < words.length; i += wordsPerChunk) {
-      chunks.push(words.slice(i, i + wordsPerChunk).join(" "));
-    }
-    return chunks;
-  };
-
-  const speakText = (chunks, startIndex, charIndex = 0) => {
-    utteranceQueueRef.current = chunks;
-    isPlayingRef.current = true;
-    setIsPaused(false);
-    readNextChunk(startIndex, charIndex);
-  };
-
-  const readNextChunk = (index, charIndex) => {
-    if (index < utteranceQueueRef.current.length && isPlayingRef.current) {
-      const textToRead = utteranceQueueRef.current[index].slice(charIndex);
-
-      utterance = new SpeechSynthesisUtterance(textToRead);
-      utterance.lang = "es-ES";
-      utterance.rate = 1;
-      utterance.pitch = 1;
-
-      utterance.onend = () => {
-        if (isPlayingRef.current && !isPaused) {
-          const newChunkIndex = index + 1;
-          setCurrentChunkIndex(newChunkIndex); // 🔥 Guardamos el nuevo índice
-          setCurrentCharIndex(0);
-          savePosition(newChunkIndex, 0); 
-          readNextChunk(newChunkIndex, 0); 
-        }
-      };
-
-      utterance.onboundary = (event) => {
-        setCurrentCharIndex(event.charIndex);
-      };
-
-      synth.speak(utterance);
-    } else {
-      setIsPlaying(false);
-      onStatusChange(false);
-    }
+    return text.split(" ").reduce((chunks, word, index) => {
+      if (index % wordsPerChunk === 0) chunks.push([]);
+      chunks[chunks.length - 1].push(word);
+      return chunks;
+    }, []).map(chunk => chunk.join(" "));
   };
 
   const handleCommand = (command) => {
@@ -87,28 +48,31 @@ export default function StoryNarrator({ storyContent, storyId, onStatusChange, s
       const savedPosition = JSON.parse(localStorage.getItem(`story_${storyId}`)) || { chunkIndex: 0, charIndex: 0 };
       const { chunkIndex, charIndex } = savedPosition;
 
-      if (isPaused) {
-        console.log(`▶️ Reanudando desde chunkIndex=${chunkIndex}, charIndex=${charIndex}`);
-        synth.cancel();
-        setIsPaused(false);
-        speakText(utteranceQueueRef.current, chunkIndex, charIndex);
-      } else if (!isPlayingRef.current) {
-        console.log(`🎙️ Iniciando desde chunkIndex=${chunkIndex}, charIndex=${charIndex}`);
-        synth.cancel();
-        const chunks = splitText(storyContent, 15);
-        speakText(chunks, chunkIndex, charIndex);
-        setIsPlaying(true);
-        onStatusChange(true);
+      if (isPaused || !isPlayingRef.current) {
+        console.log("▶️ Reanudando historia...");
+        setTimeout(() => {
+          setIsPaused(false);
+          setIsPlaying(true);
+          isPlayingRef.current = true;
+          if (!utteranceQueueRef.current.length) {
+            console.log("🛠️ Regenerando la cola de texto...");
+            utteranceQueueRef.current = splitText(storyContent, 15);
+          }
+          console.log(`🔄 Reanudando en chunkIndex=${chunkIndex}, charIndex=${charIndex}`);
+          setTimeout(() => {
+            readNextChunk(chunkIndex, charIndex);
+          }, 700);
+        }, 300);
       }
     } else if (command === "pause") {
-      console.log(`⏸️ Pausando en chunkIndex=${currentChunkIndex}, charIndex=${currentCharIndex}`);
+      console.log(`⏸️ Pausando historia con ID=${storyId}`);
       synth.cancel();
       isPlayingRef.current = false;
       setIsPlaying(false);
       setIsPaused(true);
       onStatusChange(false);
     } else if (command === "restart") {
-      console.log(`🔄 Reiniciando historia`);
+      console.log(`🔄 Reiniciando historia desde el principio`);
       synth.cancel();
       setCurrentChunkIndex(0);
       setCurrentCharIndex(0);
@@ -117,8 +81,61 @@ export default function StoryNarrator({ storyContent, storyId, onStatusChange, s
       setIsPaused(false);
       localStorage.removeItem(`story_${storyId}`);
       onStatusChange(false);
+      setTimeout(() => handleCommand("play"), 100);
     }
   };
+
+  const readNextChunk = (index, charIndex) => {
+    if (!utteranceQueueRef.current.length) {
+      console.warn("⚠️ No hay texto para leer.");
+      return;
+    }
+  
+    if (index >= utteranceQueueRef.current.length || !isPlayingRef.current) {
+      console.warn("⏹️ No se puede continuar la narración (fuera de rango o no en reproducción).");
+      setIsPlaying(false);
+      onStatusChange(false);
+      return;
+    }
+  
+    console.log(`📖 Leyendo chunkIndex=${index}, charIndex=${charIndex}`);
+    console.log("🗣️ Texto a leer:", utteranceQueueRef.current[index]);
+  
+    const textToRead = utteranceQueueRef.current[index].slice(charIndex);
+  
+    if (!textToRead.trim()) {
+      console.warn("⚠️ El texto a leer está vacío.");
+      return;
+    }
+  
+    const utterance = new SpeechSynthesisUtterance(textToRead);
+    utterance.lang = "es-ES";
+    utterance.rate = 1;
+    utterance.pitch = 1;
+  
+    utterance.onstart = () => console.log("🎙️ Iniciando narración...");
+    utterance.onend = () => {
+      console.log("✅ Chunk completado.");
+      if (isPlayingRef.current && !isPaused) {
+        const newChunkIndex = index + 1;
+        setCurrentChunkIndex(newChunkIndex);
+        setCurrentCharIndex(0);
+        savePosition(newChunkIndex, 0);
+        readNextChunk(newChunkIndex, 0);
+      }
+    };
+  
+    utterance.onerror = (event) => {
+      console.error("❌ Error en síntesis:", event.error);
+      console.warn("⚠️ Error detectado, guardando última posición conocida...");
+      savePosition(index, charIndex);
+      setIsPaused(true); // Asegura que el usuario pueda reanudar manualmente
+      isPlayingRef.current = false;
+    };
+  
+    synth.speak(utterance);
+  };
+  
 
   return <></>;
 }

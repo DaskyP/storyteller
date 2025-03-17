@@ -43,7 +43,6 @@ export default function StoryCard({ id, title, description, duration, category, 
           <p className="text-gray-400 mt-2">Categoría: {category}</p>
           <p className="text-gray-200 mt-2">{content.substring(0, 100)}...</p>
 
-          {/* 🔹 StoryNarrator maneja la reproducción */}
           <StoryNarrator
             storyId={id}
             storyContent={content}
