@@ -1,12 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PlayButton from "./PlayButton";
 import StoryNarrator from "./StoryNarrator";
 
-export default function StoryCard({ id, title, description, duration, category, content, onEdit, onDelete }) {
+export default function StoryCard({ id, title, description, duration, category, content, onEdit, onDelete, registerCommand }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedStory, setEditedStory] = useState({ title, description, duration, category, content });
   const [isPlaying, setIsPlaying] = useState(false);
-  const [handleCommand, setHandleCommand] = useState(() => () => {});
+  const [handleCommand, setHandleCommand] = useState(null); 
+
+  useEffect(() => {
+    if (registerCommand && handleCommand) {
+      console.log(`📝 Registrando controlador de voz para: ${title} (ID: ${id})`);
+      registerCommand(id, handleCommand);
+    }else{
+      console.log(`📝 No se pudo registrar controlador de voz para: ${title} (ID: ${id})`);
+    }
+  }, [handleCommand]);
 
   const handleChange = (e) => {
     setEditedStory({ ...editedStory, [e.target.name]: e.target.value });
@@ -39,7 +48,7 @@ export default function StoryCard({ id, title, description, duration, category, 
             storyId={id}
             storyContent={content}
             onStatusChange={setIsPlaying}
-            setHandleCommand={setHandleCommand}
+            setHandleCommand={setHandleCommand} 
           />
 
           <div className="flex gap-2 mt-3">

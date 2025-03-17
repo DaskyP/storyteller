@@ -12,6 +12,7 @@ export default function StoryNarrator({ storyContent, storyId, onStatusChange, s
   let utterance;
 
   useEffect(() => {
+    console.log(`Registrando controlador en StoryNarrator para ID: ${storyId}`);
     setHandleCommand(() => handleCommand);
     loadLastPosition();
   }, []);
@@ -65,8 +66,8 @@ export default function StoryNarrator({ storyContent, storyId, onStatusChange, s
           const newChunkIndex = index + 1;
           setCurrentChunkIndex(newChunkIndex); // 🔥 Guardamos el nuevo índice
           setCurrentCharIndex(0);
-          savePosition(newChunkIndex, 0); // 🔥 Guardamos la posición
-          readNextChunk(newChunkIndex, 0); // 🔥 Llamamos solo una vez aquí
+          savePosition(newChunkIndex, 0); 
+          readNextChunk(newChunkIndex, 0); 
         }
       };
 
