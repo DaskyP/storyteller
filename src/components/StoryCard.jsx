@@ -1,25 +1,54 @@
 import { useState } from "react";
-import StoryNarrator from "./StoryNarrator";
 import PlayButton from "./PlayButton";
+import StoryNarrator from "./StoryNarrator";
 
-export default function StoryCard({ title, description, duration, content }) {
+export default function StoryCard({ id, title, description, duration, category, content, onEdit, onDelete }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedStory, setEditedStory] = useState({ title, description, duration, category, content });
   const [isPlaying, setIsPlaying] = useState(false);
   const [handleCommand, setHandleCommand] = useState(() => () => {});
 
+  const handleChange = (e) => {
+    setEditedStory({ ...editedStory, [e.target.name]: e.target.value });
+  };
+
+  const handleSave = () => {
+    onEdit(id, editedStory);
+    setIsEditing(false);
+  };
+
   return (
     <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
-      <h2 className="text-xl font-bold text-green-400">{title}</h2>
-      <p className="text-gray-300">{description}</p>
-      <p className="text-gray-400 mt-2">Duración: {duration}</p>
+      {isEditing ? (
+        <>
+          <input className="w-full p-2 mb-2 text-black" name="title" value={editedStory.title} onChange={handleChange} />
+          <textarea className="w-full p-2 mb-2 text-black" name="content" value={editedStory.content} onChange={handleChange} />
+          <button className="bg-green-500 px-4 py-2 text-white rounded" onClick={handleSave}>Guardar</button>
+          <button className="bg-gray-500 px-4 py-2 text-white rounded ml-2" onClick={() => setIsEditing(false)}>Cancelar</button>
+        </>
+      ) : (
+        <>
+          <h2 className="text-xl font-bold text-green-400">{title}</h2>
+          <p className="text-gray-300">{description}</p>
+          <p className="text-gray-400 mt-2">Duración: {duration}</p>
+          <p className="text-gray-400 mt-2">Categoría: {category}</p>
+          <p className="text-gray-200 mt-2">{content.substring(0, 100)}...</p>
 
-      <StoryNarrator
-        storyId={title} // 🔥 Pasamos el título como ID único para guardar la posición
-        storyContent={content}
-        onStatusChange={setIsPlaying}
-        setHandleCommand={setHandleCommand}
-      />
+          {/* 🔹 StoryNarrator maneja la reproducción */}
+          <StoryNarrator
+            storyId={id}
+            storyContent={content}
+            onStatusChange={setIsPlaying}
+            setHandleCommand={setHandleCommand}
+          />
 
-      <PlayButton handleCommand={handleCommand} isPlaying={isPlaying} />
+          <div className="flex gap-2 mt-3">
+            <PlayButton handleCommand={handleCommand} isPlaying={isPlaying} />
+            <button className="bg-yellow-500 px-4 py-2 text-white rounded" onClick={() => setIsEditing(true)}>✏️ Editar</button>
+            <button className="bg-red-500 px-4 py-2 text-white rounded" onClick={() => onDelete(id)}>🗑️ Eliminar</button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
