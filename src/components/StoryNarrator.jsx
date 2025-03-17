@@ -22,14 +22,14 @@ export default function StoryNarrator({ storyContent, storyId, onStatusChange, s
 
   const savePosition = (chunkIndex, charIndex) => {
     localStorage.setItem(`story_${storyId}`, JSON.stringify({ chunkIndex, charIndex }));
-    console.log(`📌 Posición guardada correctamente: chunkIndex=${chunkIndex}, charIndex=${charIndex}`);
+    console.log(`Posición guardada correctamente: chunkIndex=${chunkIndex}, charIndex=${charIndex}`);
   };
 
   const loadLastPosition = () => {
     const savedPosition = localStorage.getItem(`story_${storyId}`);
     if (savedPosition) {
       const { chunkIndex, charIndex } = JSON.parse(savedPosition);
-      console.log(`✅ Posición cargada correctamente: chunkIndex=${chunkIndex}, charIndex=${charIndex}`);
+      console.log(`Posición cargada correctamente: chunkIndex=${chunkIndex}, charIndex=${charIndex}`);
       setCurrentChunkIndex(chunkIndex);
       setCurrentCharIndex(charIndex);
     }
@@ -49,7 +49,7 @@ export default function StoryNarrator({ storyContent, storyId, onStatusChange, s
       const { chunkIndex, charIndex } = savedPosition;
 
       if (isPaused || !isPlayingRef.current) {
-        console.log("▶️ Reanudando historia...");
+        console.log("Reanudando historia...");
         setTimeout(() => {
           setIsPaused(false);
           setIsPlaying(true);
@@ -58,21 +58,21 @@ export default function StoryNarrator({ storyContent, storyId, onStatusChange, s
             console.log("🛠️ Regenerando la cola de texto...");
             utteranceQueueRef.current = splitText(storyContent, 15);
           }
-          console.log(`🔄 Reanudando en chunkIndex=${chunkIndex}, charIndex=${charIndex}`);
+          console.log(`Reanudando en chunkIndex=${chunkIndex}, charIndex=${charIndex}`);
           setTimeout(() => {
             readNextChunk(chunkIndex, charIndex);
           }, 700);
         }, 300);
       }
     } else if (command === "pause") {
-      console.log(`⏸️ Pausando historia con ID=${storyId}`);
+      console.log(`Pausando historia con ID=${storyId}`);
       synth.cancel();
       isPlayingRef.current = false;
       setIsPlaying(false);
       setIsPaused(true);
       onStatusChange(false);
     } else if (command === "restart") {
-      console.log(`🔄 Reiniciando historia desde el principio`);
+      console.log(`Reiniciando historia desde el principio`);
       synth.cancel();
       setCurrentChunkIndex(0);
       setCurrentCharIndex(0);
@@ -87,24 +87,24 @@ export default function StoryNarrator({ storyContent, storyId, onStatusChange, s
 
   const readNextChunk = (index, charIndex) => {
     if (!utteranceQueueRef.current.length) {
-      console.warn("⚠️ No hay texto para leer.");
+      console.warn("No hay texto para leer.");
       return;
     }
   
     if (index >= utteranceQueueRef.current.length || !isPlayingRef.current) {
-      console.warn("⏹️ No se puede continuar la narración (fuera de rango o no en reproducción).");
+      console.warn("No se puede continuar la narración (fuera de rango o no en reproducción).");
       setIsPlaying(false);
       onStatusChange(false);
       return;
     }
   
-    console.log(`📖 Leyendo chunkIndex=${index}, charIndex=${charIndex}`);
-    console.log("🗣️ Texto a leer:", utteranceQueueRef.current[index]);
+    console.log(`Leyendo chunkIndex=${index}, charIndex=${charIndex}`);
+    console.log("Texto a leer:", utteranceQueueRef.current[index]);
   
     const textToRead = utteranceQueueRef.current[index].slice(charIndex);
   
     if (!textToRead.trim()) {
-      console.warn("⚠️ El texto a leer está vacío.");
+      console.warn("El texto a leer está vacío.");
       return;
     }
   
@@ -115,7 +115,7 @@ export default function StoryNarrator({ storyContent, storyId, onStatusChange, s
   
     utterance.onstart = () => console.log("🎙️ Iniciando narración...");
     utterance.onend = () => {
-      console.log("✅ Chunk completado.");
+      console.log("Chunk completado.");
       if (isPlayingRef.current && !isPaused) {
         const newChunkIndex = index + 1;
         setCurrentChunkIndex(newChunkIndex);
@@ -126,10 +126,10 @@ export default function StoryNarrator({ storyContent, storyId, onStatusChange, s
     };
   
     utterance.onerror = (event) => {
-      console.error("❌ Error en síntesis:", event.error);
-      console.warn("⚠️ Error detectado, guardando última posición conocida...");
+      console.error("Error en síntesis:", event.error);
+      console.warn("Error detectado, guardando última posición conocida...");
       savePosition(index, charIndex);
-      setIsPaused(true); // Asegura que el usuario pueda reanudar manualmente
+      setIsPaused(true); 
       isPlayingRef.current = false;
     };
   

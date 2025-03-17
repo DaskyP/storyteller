@@ -36,7 +36,7 @@ export default function useVoiceCommands(stories, handleVoiceCommand, setSelecte
 
       recognitionRef.current.onresult = (event) => {
         const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase().trim();
-        console.log("🗣️ Comando detectado:", transcript);
+        console.log("Comando detectado:", transcript);
 
         const normalizeText = (text) => 
           text
@@ -46,11 +46,11 @@ export default function useVoiceCommands(stories, handleVoiceCommand, setSelecte
             .replace(/[\u0300-\u036f]/g, "") 
             .replace(/\s+/g, " "); 
 
-        console.log("📚 Lista de historias en memoria:", stories.map(story => normalizeText(story.title)));
+        console.log("Lista de historias en memoria:", stories.map(story => normalizeText(story.title)));
 
         if (transcript.startsWith("reproduce")) {
           const storyName = normalizeText(transcript.replace("reproduce", "").trim());
-          console.log(`📖 Buscando historia con nombre: "${storyName}"`);
+          console.log(`Buscando historia con nombre: "${storyName}"`);
 
           const foundStory = stories.find(story => 
             normalizeText(story.title) === storyName

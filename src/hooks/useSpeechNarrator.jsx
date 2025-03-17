@@ -23,7 +23,6 @@ export function useSpeechNarrator(storyContent, wordsPerChunk = 15) {
     readNextChunk(startIndex, charIndex);
   };
 
-  // 🔹 Función para leer fragmentos en orden
   const readNextChunk = (index, charIndex) => {
     if (index < utteranceQueueRef.current.length) {
       utterance = new SpeechSynthesisUtterance(utteranceQueueRef.current[index].slice(charIndex));
@@ -49,10 +48,9 @@ export function useSpeechNarrator(storyContent, wordsPerChunk = 15) {
     }
   };
 
-  // 🔹 Función para iniciar o pausar la narración
   const togglePlay = () => {
     if (isPlaying) {
-      synth.cancel(); // Pausar
+      synth.cancel();
       setIsPaused(true);
     } else {
       const chunks = splitText(storyContent, wordsPerChunk);
