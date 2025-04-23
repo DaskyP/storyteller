@@ -1,7 +1,7 @@
+import React from 'react';
 import { useState, useEffect } from "react";
 import PlayButton from "./PlayButton";
 import StoryNarrator from "./StoryNarrator";
-
 export default function StoryCard({ id, title, description, duration, category, content, onEdit, onDelete, registerCommand }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedStory, setEditedStory] = useState({ title, description, duration, category, content });

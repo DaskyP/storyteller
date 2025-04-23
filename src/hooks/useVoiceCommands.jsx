@@ -1,5 +1,5 @@
+import React from 'react';
 import { useEffect, useState, useRef } from "react";
-
 export default function useVoiceCommands(stories, handleVoiceCommand, setSelectedCategory) {
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef(null);
@@ -144,5 +144,5 @@ export default function useVoiceCommands(stories, handleVoiceCommand, setSelecte
     if (recognitionRef.current) recognitionRef.current.stop();
   };
 
-  return { isListening, startListening, stopListening };
+  return { isListening, startListening, stopListening,  registerCommand: () => {}  };
 }

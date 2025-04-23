@@ -1,3 +1,4 @@
+import React from 'react';
 export default function CategoryFilter({ categories, setSelectedCategory, selectedCategory }) {
     return (
       <div className="flex justify-center space-x-4 my-6">
